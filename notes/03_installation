@@ -1,0 +1,207 @@
+-----------------------------------------------------------------------------
+| CHAPTER 3 - INSTALLING CASSANDRA                                          |
+-----------------------------------------------------------------------------
+
+- Installing the Apache Distribution
+
+    1. Download the 'latest' version of the Apache Cassandra distribution, then extract it.  The
+         binary distribution has these folders:
+
+         bin               # Executables and clients
+         conf              # Files for configuring Cassandra instance
+         data              # Where Cassandra stores it's datafiles
+         doc               # Documentation for project
+         javadoc           # Documentation gathered using Javadoc
+         lib               # All external libraries Cassandra needs to run
+         logs              # Where Cassandra stores it's logs
+         pylib             # Contains Python utilities used by cqlsh
+         tools             # Tools used to maintain Cassandra nodes
+
+
+    2. Next, we will build the application from source.  Cassandra uses Apache Ant for it's build
+         scripting language and Maven for dependency management.
+
+         $ cd CASSANDRA_HOME
+         $ ant
+
+
+
+- Running Cassandra
+
+    - We need to set the 'JAVA_HOME' environment variable, and we can add settings for data and logs
+        directories if we don't want to use the defaults in the 'conf/cassandra.yaml' file.
+
+
+    - Many users on Unix-based systems prefer to use the /var/lib directory for data storage.  To do
+        this, we just need to create the new directory and update the 'cassandra.yaml'.
+
+        $ sudo mkdir -p /var/lib/cassandra
+        $ sudo chown -R username /var/lib/cassandra
+
+
+    - To start the Cassandra server:
+
+        # Run in foreground so we see log output
+        $ cassandra -f
+
+
+    - The way to stop Cassandra is to kill the JVM process that is running it.  Two ways of doing this
+        are.
+
+        1. Pass in a file that Cassandra writes its PID to upon startup.
+
+             # Write pid to file on startup
+             $ cassandra -p /var/run/cassandra/cassandra.pid
+
+             # Kill process
+             $ ./stop-server
+
+
+        2. Find the pid, then kill the process.
+
+             # From the './stop-server' script
+             user=`whoami`
+             pgrep -u $user -f cassandra | xargs kill −9
+
+
+
+- Running the CQL Shell
+
+    - To run the shell:
+
+        $ cd CASSANDRA_HOME
+        $ bin/cqlsh
+
+      You'll see that you are connected to a cluster called 'TestCluster', which is a one-node cluster
+        set up on localhost by default.  Since you didn't specify a node to connect to, you'll be
+        connected to the node running on localhost automatically by the shell.
+
+
+    - To connect to a specific node, specify the hostname and port on the command line.
+
+        # Connect to our local node
+        $ bin/cqlsh localhost 9042
+
+
+    - All cqlsh commands are case-insensitive.  We'll use the convention of using uppercase commands.
+
+
+
+- Basic cqlsh Commands
+
+    - To get help for the shell:
+
+        cqlsh> help
+
+
+    - To get information about the environment:
+
+        # Information about cluster
+        cqlsh> DESCRIBE CLUSTER;
+
+        # Available keyspaces
+        cqlsh> DESCRIBE KEYSPACES;
+
+        # Get the versions being used
+        cqlsh> SHOW VERSION;
+
+
+
+- Creating a Keyspace and Table in cqlsh
+
+    - A Cassandra keyspace is sort of like a relational DB.  It defines one or more tables.  When you
+        start cqlsh without specifying a keyspace, you get the 'cqlsh>' prompt.
+
+
+    - To create our first keyspace:
+
+        cqlsh> CREATE KEYSPACE my_keyspace WITH replication = {'class':
+                 'SimpleStrategy', 'replication_factor': 1};
+
+
+    - To use the keyspace:
+
+        cqlsh> USE my_keyspace;
+        cqlsh:my_keyspace>
+
+
+    - Now, we'll create a table:
+
+        cqlsh:my_keyspace> CREATE TABLE user ( first_name text ,
+                             last_name text, title text, PRIMARY KEY (last_name, first_name));
+
+        # Look at new table
+        cqlsh:my_keyspace> DESCRIBE TABLE user;
+
+
+
+- Writing and Reading Data in cqlsh
+
+    - We can write a row into our table:
+
+        cqlsh:my_keyspace> INSERT INTO user (first_name, last_name, title)
+                             VALUES ('Bill', 'Nguyen', 'Mr.');
+
+
+    - And we can read back the row we just added:
+
+        cqlsh:my_keyspace> SELECT * FROM user WHERE first_name='Bill' AND
+                             last_name='Nguyen';
+
+
+    - Note that it is common to use COUNT queries when testing relational DBs to make sure a row was
+        inserted.  Cassandra will allow us to do this, but it will give us a warning that full table
+        scans are a very bad idea.
+
+        cqlsh:my_keyspace> SELECT COUNT (*) FROM user;
+
+
+    - You can delete a column from a row:
+
+        cqlsh:my_keyspace> DELETE title FROM USER WHERE
+                             first_name='Bill' AND last_name='Nguyen';
+
+
+    - To remove a row from the table:
+
+        # Delete the row
+        cqlsh:my_keyspace> DELETE FROM USER WHERE first_name='Bill'
+                             AND last_name='Nguyen';
+
+        # Verify the row was deleted
+        cqlsh:my_keyspace> SELECT * FROM user WHERE first_name='Bill'
+                             AND last_name='Nguyen';
+
+
+    - To remove all data from the table and drop the table:
+
+        cqlsh:my_keyspace> TRUNCATE user;
+        cqlsh:my_keyspace> DROP TABLE user;
+
+
+
+- Running Cassandra in Docker
+
+    - To run a Cassandra node in Docker:
+
+        # Run Cassandra
+        $ docker pull cassandra
+        $ docker run --name my-cassandra cassandra
+
+        # Stop Cassandra
+        $ docker stop my-cassandra
+
+
+    - Note that we'll need to expose the port to send queries from outside the node and add a volume
+        for persistence.
+
+        $ docker run --name my-cassandra 
+                     -p 9042:9042 
+                     -v cassandra_persistence:/var/lib/cassandra
+                     -d
+                     cassandra
+
+
+    - To start an instance of cqlsh:
+
+        $ docker exec -it my-cassandra cqlsh
