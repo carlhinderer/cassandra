@@ -1,0 +1,174 @@
+-----------------------------------------------------------------------------
+| CHAPTER 2 - INTRODUCING CASSANDRA                                         |
+-----------------------------------------------------------------------------
+
+- Cassandra
+
+    - Apache Cassandra is an open source, distributed, decentralized, elastically scalable,
+        highly available, fault-tolerant, tuneably consistent, row-oriented database. 
+
+    - Cassandra bases its distribution design on Amazon’s Dynamo and its data model on Google’s
+        Bigtable, with a query language similar to SQL. 
+
+    - Created at Facebook, it now powers cloud-scale applications across many industries.
+
+
+
+- Distributed and Decentralized
+
+    - Engineered to work across many machines, multiple data center racks, and even a geographically
+        distributed cluster.
+
+    - Every node is identical.  No node performs organizing operations different from any other node.
+        Server symmetry means there is no SPOF.
+
+    - P2P architecture uses a gossip protocol to maintain and keep in sync a list of nodes that are
+        alive or dead.
+
+    - Replication is decentralized, there is no primary-secondary replica relationship.
+
+
+
+- Elastic Scalability, High Availability, and Fault Tolerance
+
+    - All you have to do is add a new machine.  Cassandra will find it and start sending it work.
+
+    - No need to restart anything, change any queries, or manually rebalance data.
+
+    - We can replace failed nodes with no downtime, and we can replicate data to multiple data centers.
+
+
+
+- Tuneable Consistency
+
+    - Consistency is an overloaded term in the database world.  For our purposes, we will define it as
+        always returning the most recently written value.
+
+    - For instance, consider the case of 2 customers putting the last item in stock in their cart at the
+        same time.  If I place it in my cart just after you do, you should get the item and I should get
+        a message that the item is out of stock.
+
+    - Scaling data stores means making trade-offs among data consistency, node availability, and 
+        partition tolerance.
+
+    - Large-scale web applications (ie Amazon, Facebook, Google, Twitter) use eventual consistency, but
+        many companies are reluctant since they do not want data loss.
+
+
+    - Different Types of Consistency:
+
+        1. Strict Consistency
+             - Also called sequential consistency, the most stringent level of consistency
+             - Every read will always return the most recently written value
+             - Any time you do this across multiple machines you need some kind of global clock
+
+        2. Causal Consistency
+             - Gets rid of fantasy of reliable global clock that can synchronize without bottlenecks
+             - Tries to determine cause of events rather than relying on timestamps
+             - Causal writes must be read in sequence
+
+        3. Weak (Eventual) Consistency
+             - All updates will propogate, but it may take some time
+
+
+    - To achieve strong consistency, all updates must be performed synchronously, so they must block,
+        locking until all operations are complete.
+
+    - The other alternative is to always allow writes, then deal with any conflicts either at write
+        or read time.  Dynamo and Cassandra are always writable, and they defer conflict resolution
+        to read operations.  This makes them massively scalable.
+
+
+    - We say that Cassandra has 'tuneable consistency' because the client can control the number of
+        replicas to block on for all updates.  This is done by setting the consistency level against
+        the replication factor.
+
+        1. You set the 'replication factor' to the number of nodes in the cluster you want the updates
+             to propogate to.
+
+        2. The 'consistency level' must be specified by the clients on each operation and that allows
+             you to decide you many replicas must acknowledge a write or respond to a read to be
+             considered successful.
+
+
+    - For strong consistency, set the consistency level equal to the replication factor.  This is
+        rarely done in Cassandra, though.
+
+
+
+- Brewer's CAP Theorem
+
+    - Consistency = All clients will read the same value for the same query
+
+      Availability = All clients will be able to read and write data
+
+      Partitioning = Database can continue to function in network fault
+
+
+    - Since network faults are a given, we can only really compromise on A vs C
+
+
+    - AC = Relational DBs
+             - Use 2PC for distributed transactions, system will stop if network is down
+             - Use single data center to limit this risk
+
+      AP = Amazon Dynamo derivatives (Cassandra, Voldemort, CouchDB, Riak)
+             - Systems may return inaccurate data, but will always be available
+             - DNS is example of this
+
+      CP = Google BigTable derivatives (Neo4J, MongoDB, HBase, Redis)
+             - Set up shards to scale
+             - Data will be consistent, but some data might be unavailable if nodes fail
+
+
+
+- Row-Oriented
+
+    - Cassandra’s data model can be described as a partitioned row store, in which data is
+        stored in sparse multidimensional hash tables.
+
+        'Sparse' means each row can have different columns.
+        'Partitioned' means each row has a unique key.
+
+      Somewhat confusingly, this is also sometimes called a 'wide column store' model.  However, 
+        Cassandra is not a column-oriented database like Kudu or HBase, which are used for analytics.
+
+
+
+- History of Cassandra
+
+    - Early versions of Cassandra used a Thrift-based client and was completely schemaless.  Over time,
+        this approach was deprecated in favor of the more SQL-like CQL.  The Thrift client was
+        deprecated and removed in version 4.
+
+
+    - Timeline
+
+        - Started at Facebook in 2007 to solve it's inbox search problem
+        - Open sourced to Google Code in 2008
+        - Apache incubator in 2009
+        - Apache top-level project in 2010
+        - DataStax started in 2010
+        - v3 in 2016
+        - v4 in 2020
+
+
+
+- Is Cassandra a Good Fit For My Project?
+
+    - Large Deployments
+        - Don't need Cassandra if a single-node relational DB will do
+        - For applications expected to require dozens of nodes or more
+
+
+    - Lots of Writes, Statistics, and Analytics
+        - Optimized for excellent throughput on writes
+
+
+    - Geographical Distribution
+        - Out-of-the-box support for spanning multiple data centers
+        - Allows you to put data close to user
+
+
+    - Hybrid Cloud and Multicloud Deployment
+        - Cluster works fine across different cloud providers
