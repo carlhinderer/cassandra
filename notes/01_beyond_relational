@@ -1,0 +1,129 @@
+-----------------------------------------------------------------------------
+| CHAPTER 1 - BEYOND RELATIONAL DATABASES                                   |
+-----------------------------------------------------------------------------
+
+- Codd's 12 Rules for Relational Databases
+
+    0. The database must be in relational form.
+
+    1. The data must be stored in tables with rows and columns.
+
+    2. Values are accessed by specifying primary key, table name, and column name.
+
+    3. Null values must be supported.
+
+    4. The database schema is also represented using the relational model.  Users can query it like
+         any other relation.
+
+    5. There should be languages for DDL, view definition, DML, integrity constraints, authorization, 
+         and transactions(with begin-commit-rollback).
+
+    6. All views are updatable by the system.
+
+    7. The database should also support inserting, updating, and deleting data anywhere in each level
+         or a single row.
+
+    8. Changing the underlying storage of the database shouldn't change how it is queried.
+
+    9. Changing the logical level (table structures) shouldn't affect client applications either.
+
+    10. A database must maintain integrity independence when inserting into cells.
+
+    11. Users should not affect each other in the database.  All data should be independent of any user.
+
+    12. Don't try to subvert the SQL/relational level to make changes at a lower level.
+
+
+
+- Typical Steps for Scaling Relational Database
+
+    1. Vertical scaling with faster hardware.
+
+    2. Add additional machines to a database cluster.  Now you have the probelms of data replication
+         and consistency.
+
+    3. Next, you start changing the DBMS configuration and try to do things like turn off journaling
+         or logging.
+
+    4. Try to improve your application now.  Add indexes and remove resource-intensive things like XML
+         processing from the DB.  Try to move them to the app layer and hope you don't break anything.
+         You probably already did the easy things already, so you look for smaller and smaller
+         optimizations.
+
+    5. Use a caching layer like Redis, Memcached, or Riak.  Now, you have a consistency problem between
+         updates in the cache and updates in the database, which is exacerbated over the cluster.
+
+    6. Start denormalizing data, since you have no other choice.
+
+
+
+- 2PC
+
+    - In order to make relational transactions work across multiple hosts, 2PC can be used.  In the
+        'prepare phase', the coordinator attempts to prepare all participants to commit a transaction.
+        In the 'commit phase', the coordinator decides to commit only if all participants have
+        indicated they are ready.
+
+    - Competing consumers are blocked, since all associated resources are locked for the duration of
+        the transaction.
+
+    - If one node goes down, all processing is blocked until it comes back online or is removed from
+        the cluster.  If one node is slow, very high latency can result.
+
+    - This approach does not scale at all.
+
+    - Compensatory transactions are required if some kind of error is reported.
+
+
+
+- Sharding
+
+    - Three basic strategies for sharding data:
+
+        1. Feature-based sharding = Put separate business functions in separate DBs
+
+        2. Key-based sharding = Use a key in your data to evenly distribute across shards
+
+        3. Lookup table = One node has mappings and returns lookups (bottleneck and SPOF)
+
+
+    - Many nonrelational DBs offer sharding support out of the box.  For instance, MongoDB provides
+        auto-sharding capabilities to manage failover and node balancing.
+
+
+
+- Common Types of Nonrelational Databases
+
+    - Key Value Stores
+        - All data relevant to a key is stored with a key
+        - DynamoDB, Riak, Voldemort
+        - Also caches like Redis and memcached
+
+    - Column Stores (aka Wide-Column Stores or Column-Oriented Stores)
+        - Data is stored by column rather than row
+        - Useful for analytics, since all values of a column can be easily retrieved
+        - HBase, Kudu, Druid
+
+    - Document Stores
+        - Basic unit of storage is the complete document
+        - Document is often JSON, XML, or YAML
+        - MongoDB, CouchDB
+
+    - Graph Databases
+        - Represent data as a network of nodes and edges
+        - Both nodes and edges can have properties
+        - Neo4j, Janus-Graph, Datastax Graph
+
+    - Object Databases
+        - Stores data in objects
+        - AWS S3
+
+    - XML Databases
+        - Special form of document databases optimized for XML
+        - BaseX, eXist
+
+    - Multimodel Databases
+        - Support more than one of these styles
+        - Era of polyglot persistence
+        - Azure Cosmos DB (exposes document, wide column, graph APIs on top of key-value store)
+        - Datastax Enterprise (graph API on top of Cassandra's wide-column model)
