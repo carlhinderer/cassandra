@@ -134,6 +134,10 @@
         cqlsh:my_keyspace> DESCRIBE TABLE user;
 
 
+    - Note that by convention, names used in Cassandra are snake case.  CamelCase or other formats can
+        be used if enclosed in parentheses.
+
+
 
 - Writing and Reading Data in cqlsh
 
@@ -143,10 +147,40 @@
                              VALUES ('Bill', 'Nguyen', 'Mr.');
 
 
-    - And we can read back the row we just added:
+    - And we can read back the row we just added using the entire PK:
 
-        cqlsh:my_keyspace> SELECT * FROM user WHERE first_name='Bill' AND
-                             last_name='Nguyen';
+        cqlsh:my_keyspace> SELECT * FROM user WHERE first_name='Bill' AND last_name='Nguyen';
+
+
+    - But what happens if we try to select data, providing only part of the PK?  If we provide only
+        the 'last_name':
+
+        cqlsh:my_keyspace> SELECT * FROM user where last_name = 'Nguyen';
+
+        last_name | first_name | title
+       -----------+------------+-------
+           Nguyen |       Bill | Mr.
+
+       (1 rows)
+
+
+    - If we provide only the 'first_name':
+
+        cqlsh:my_keyspace> SELECT * FROM user where first_name = 'Bill';
+
+        InvalidRequest: Error from server: code=2200 [Invalid query]
+        message="Cannot execute this query as it might involve data
+        filtering and thus may have unpredictable performance.
+        If you want to execute this query despite the
+        performance unpredictability, use ALLOW FILTERING"
+
+
+    - This is due to the composition of the PK we used for the table.  
+
+
+
+
+
 
 
     - Note that it is common to use COUNT queries when testing relational DBs to make sure a row was
@@ -154,6 +188,10 @@
         scans are a very bad idea.
 
         cqlsh:my_keyspace> SELECT COUNT (*) FROM user;
+
+
+
+- Deleting Data in cqlsh
 
 
     - You can delete a column from a row:

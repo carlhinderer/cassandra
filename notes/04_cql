@@ -1,0 +1,253 @@
+-----------------------------------------------------------------------------
+| CHAPTER 4 - THE CASSANDRA QUERY LANGUAGE                                  |
+-----------------------------------------------------------------------------
+
+- The Relational Data Model
+
+    - Tables contain comlumns.  Every row that is added to the table must contain values for all columns.
+
+    - Null values are used if you don't specify a value for every column defined.
+
+    - If you want to update or delete rows, you can update or delete all or just some of them,
+        depending on your WHERE clause.
+
+
+
+- Cassandra's Data Model
+
+    - A Cassandra row
+
+                 Column1      Column2      Column3  ...
+        PK       ----------------------------------------
+                 Value1       Value2       Value3
+
+
+    - A table is a logical division that associates similar data, similar to a relational table.
+
+    - Since we have sparse arrays as rows (columns can by anything), we don't waste space on NULL
+        values for data we don't have.  This is why it's called 'wide column'.
+
+
+    - Cassandra uses a special type of primary key called a 'composite key' (or 'compound key') to
+        represent groups of related rows ('partitions').
+
+      The composite key consists of a 'partition key', plus an optional set of 'clustering columns'.
+
+
+    - The partition key is used to determine the nodes on which rows are stored and can itself consist
+        of multiple columns.  The clustering columns are used to control how data is sorted for storage
+        within a partition.
+
+    - Cassandra also supports an additional construct called a 'static column', which is for storing
+        data that is not part of the primary key but is shared by every row in a partition.
+
+
+
+- Cassandra Table
+
+    Table
+    ---------------
+
+    [Row]
+      PK     Col1->Value Col2->Value
+
+    [Row]
+      PK     Col3->Value Col4->Value
+
+
+
+- Cassandra Table with Partitions
+
+    Table
+    ---------------
+
+    [Partition 1]
+      StaticCol1->Value
+
+      [Row]
+        PK    ClusteringCol1->Value    Col1->Value    Col2->Value
+
+      [Row]
+        PK    ClusteringCol1->Value    Col3->Value    Col4->Value
+
+
+    [Partition 2]
+      StaticCol2->Value
+
+      [Row]
+        PK    ClusteringCol1->Value    Col1->Value    Col2->Value
+
+      [Row]
+        PK    ClusteringCol1->Value    Col3->Value    Col4->Value
+
+
+
+- Cassandra Data Model Summary
+
+    - A 'column' is a name/value pair.
+
+    - A 'row' is a container for columns referenced by primary key.
+
+    - A 'partition' is a group of related rows stored together on the same nodes.
+
+    - A 'table' is a container for rows organized by partitions.
+
+    - A 'keyspace' is a container for tables.
+
+    - A 'cluster' is a container for keyspaces that spans one or more nodes.
+
+
+
+- Partition, Composite, and Clustering Keys
+
+    - A Cassandra PK contains:
+
+        1+ partitioning columns
+        0+ clustering columns
+
+
+    - The 'partition key' is used to distribute data around the cluster.  It is always the first key
+        specified in the PK.  Omitting the partition key means a full table scan will be performed.
+
+        PRIMARY KEY (app_name)
+
+
+    - It we want to combine more than one column to form a single partition key, we use a 'composite
+        partition key'.  This is again to make storage and retrieval more efficient.
+
+        PRIMARY KEY ((app_name, env))
+
+
+    - Partitioning is the process of identifying the partition range within a node that the data is
+        placed into.  
+
+      In contrast, clustering is a storage engine process of sorting the data within a partition, and
+        is based on the columns defined as the 'clustering keys'.
+
+        PRIMARY KEY ((app_name, env), hostname, log_datetime)
+
+
+    - By default, 
+
+
+
+- Clusters and Keyspaces
+
+    - A group of several machines grouped together to form a Cassandra database is called a 'cluster'.
+        The cluster is also sometimes called the 'ring', since Cassandra assigns data to nodes in the
+        cluster by arranging them in a ring.
+
+
+    - A 'keyspace' is the outermost container for data, similar to a relational database.  It is a 
+        container for tables.
+
+      A keyspace has a name and a set of attributes that define keyspace-wide behavior such as 
+        replication.
+
+
+
+- Tables
+
+    - A 'table' is a container for an ordered collection of rows, each of which is itself an ordered
+        collection of columns.
+
+      Rows are organized in partitions and assigned to nodes in a cluster according to the columns
+        designated as the partition key.  The ordering of data within a partition is determined by
+        the clustering columns.
+
+
+    - The SELECT, INSERT, UPDATE, and DELETE commands in CQL all operate in terms of rows.
+
+      For the INSERT and UPDATE commands, all of the primary key columns must be specified using the
+        WHERE clause in order to identify the specific row affected.
+
+      The SELECT and DELETE commands can operate on rows within a partition, an entire partition, or
+        even multiple partitions.
+
+
+
+- Upsert
+
+    - Note that because Cassandra uses an append model, there is no fundamental difference between
+        the insert and update operations.  If you insert a row that has the same PK as an existing
+        row, the row is replaced.
+
+      If you update a row with a PK that doesn't exist, Cassandra creates it.
+
+
+    - To add a 'middle_initial' column to our 'user' table:
+
+        cqlsh:my_keyspace> ALTER TABLE user ADD middle_initial text;
+        cqlsh:my_keyspace> DESCRIBE TABLE user;
+
+
+    - Now, we'll add a couple rows:
+
+        cqlsh:my_keyspace> INSERT INTO user (first_name, middle_initial, last_name, title)
+                           VALUES ('Bill', 'S', 'Nguyen', 'Mr.');
+
+        cqlsh:my_keyspace> INSERT INTO user (first_name, middle_initial, last_name, title)
+                           VALUES ('Bill', 'R', 'Nguyen', 'Mr.');
+
+
+    - And we can select our new rows, but there is only one row!  The second row replaced the first,
+        since they both have the same PK.
+
+        cqlsh:my_keyspace> SELECT * FROM user WHERE first_name='Bill' AND last_name='Nguyen';
+
+        last_name | first_name | middle_initial | title
+       -----------+------------+----------------+-------
+           Nguyen | Bill       | R              | Mr.
+
+
+
+
+- Columns
+
+
+- CQL Numeric Data Types
+
+    int             # 32-bit signed
+    bigint          # 64-bit signed
+    smallint        # 16-bit signed
+    tinyint         # 8-bit signed
+    varint          # Variable precision signed
+
+    float           # 32-bit FP
+    double          # 64-bit FP
+
+    decimal         # Variable-precision decimal
+
+
+
+- Textual Data Types
+
+    text, varchar   # UTF-8 character string
+
+    ascii           # ASCII character string
+
+
+
+- Time and Identity Data Types
+
+
+- Other Simple Data Types
+
+    boolean         # True/False
+
+    blob            # Arbitrary array of bytes (useful for media or other binary types)
+
+    inet            # IPv4 or IPv6 address
+
+    counter         # 64-bit signed integer that can only be incremented or decremented
+
+
+    - Note that the operations to increment and decrement the counter are not idempotent.  The only
+        other CQL operation that is not idempotent is adding an item to a 'list'.
+
+
+
+- Collections
+
+
+- UDTs

@@ -39,7 +39,7 @@
 
     1. Vertical scaling with faster hardware.
 
-    2. Add additional machines to a database cluster.  Now you have the probelms of data replication
+    2. Add additional machines to a database cluster.  Now you have the problems of data replication
          and consistency.
 
     3. Next, you start changing the DBMS configuration and try to do things like turn off journaling
