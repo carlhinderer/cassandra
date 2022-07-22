@@ -122,12 +122,14 @@
         placed into.  
 
       In contrast, clustering is a storage engine process of sorting the data within a partition, and
-        is based on the columns defined as the 'clustering keys'.
+        is based on the columns defined as the 'clustering keys'.  Our selection of clustering keys
+        depends on how we want to use the data in our application.
 
         PRIMARY KEY ((app_name, env), hostname, log_datetime)
 
 
-    - By default, 
+    - By default, the Cassandra storage engine sorts the data in ascending order of clustering key
+        columns.
 
 
 
@@ -198,7 +200,6 @@
         last_name | first_name | middle_initial | title
        -----------+------------+----------------+-------
            Nguyen | Bill       | R              | Mr.
-
 
 
 
