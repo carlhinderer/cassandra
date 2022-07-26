@@ -1,0 +1,20 @@
+-----------------------------------------------------------------------
+| CHAPTER 1 - GETTING STARTED                                         |
+-----------------------------------------------------------------------
+
+- Starting DataStax Studio
+
+    1. Run the shell script to start Studio.
+
+         $ cd /usr/local/bin/datastax-studio-6.8.21
+         $ ./bin/server.sh
+
+
+    2. To run Studio, navigate to:
+
+         http://127.0.0.1:9091
+
+
+    3. To stop Studio:
+
+         $ pkill -f studio
