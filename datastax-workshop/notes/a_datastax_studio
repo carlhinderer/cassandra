@@ -1,0 +1,32 @@
+-----------------------------------------------------------------------------
+| DATASTAX STUDIO                                                           |
+-----------------------------------------------------------------------------
+
+- Starting DataStax Studio
+
+    1. Run the shell script to start Studio.
+
+         $ cd /usr/local/bin/datastax-studio-6.8.21
+         $ ./bin/server.sh
+
+
+    2. To run Studio, navigate to:
+
+         http://127.0.0.1:9091
+
+
+    3. To stop Studio:
+
+         $ pkill -f studio
+
+
+
+- Instructions 
+
+    (https://community.datastax.com/articles/12265/how-to-connect-to-astra-db-from-datastax-studio.html)
+
+    1. Create an application token
+
+    2. Create a secure application bundle
+
+    3. Add a new connection with these creds in DataStax Studio
