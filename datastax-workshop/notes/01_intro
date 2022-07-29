@@ -149,3 +149,155 @@
 
 
 
+- Consistency Levels
+
+    - Strong Consistency
+
+        CL(write) = QUORUM
+        CL(read)  = QUORUM
+
+        Most recent write is always read.
+
+
+    - Eventual Consistency
+
+        CL(write) = 1
+        CL(read)  = 1
+
+        We're still confirming the write/read was successful, but it will take a short amount of time to
+          propogate to all replicas (~ 1 ms).  This is often fine for things like log messages, IOT
+          readings, and time series.
+
+
+    - Multi-Datacenter Consistency
+
+        - Use a quorum only in the local center.  Nodes in other datacenters are not considered for 
+            quorums.
+
+        - This helps avoid cross-datacenter waiting ( ~ 70 ms from us-west to us-east).
+
+
+    - Here are all the consistency levels available in Cassandra:
+
+        ANY                    # No replication, just throw data into cluster (don't use)
+
+        ONE, TWO, THREE        # Checks closest nodes to coordinator
+
+        QUORUM                 # Majority vote
+
+        LOCAL_ONE              # Closest node in same datacenter
+
+        LOCAL_QUORUM           # Closest quorum in same datacenter
+
+        EACH_QUORUM            # Quorum of nodes in each datacenter
+
+        ALL                    # Every node
+
+
+        ONE and QUORUM are the most commonly used by far.
+
+
+
+- Hinted Handoff
+
+    - A node goes down, so a coordinator saves writes meant for the node in a file, and will send it to
+        the node when it comes back up.
+
+    - The coordinator keeps hints for 3 hours by default, and this can be configured.
+
+
+
+- Read Repair
+
+    - Normally, when reading, we just retrieve data from the first node, then checksums for the other
+        nodes.  This is an optimization.
+
+    - If the checksums don't match, read repair is launched asynchronously.
+
+
+
+- Write Path
+
+            ->   RAM                 ->  HD #2 
+                 (Current SSTable)       (Older SSTables)
+    WRITE
+            ->   HD #1
+                 (Commit Log)
+
+
+
+- Read Path
+
+    READ   ->   RAM          ->  SSTable #1  ->  SSTable #2  ->  SSTable #3  ->  ...
+                (MemTable)
+
+
+    - We also have:
+
+        1. Partition Index (byte offsets for where each partition begins)
+
+        2. Partition Index Summary (summarized version of partition index stored in RAM)
+
+        3. Key Cache (if enabled, stores results of most recent queries)
+
+        4. Bloom Filter (used to efficiently determine set membership)
+
+
+    - Since data is always sorted by clustering columns, we can just use binary search once we know
+        where the partition is.
+
+
+    - If we use all the available read optimizations, the full read process looks like:
+
+        READ  ->  Bloom Filter  ->  Key Cache  ->  Partition Summary  ->  Partition Index  ->  SSTable
+
+
+
+- Compaction
+
+    - Cassandra stores timestamps for every cell in every row, so we always know which value is most
+        recent.
+
+
+    - To delete a record, we write a tombstone.  We might leave tombstones around (~ 10 days) so that
+        read repair doesn't make deleted data reappear.
+
+
+
+- Compacting Partitions
+
+    P1                                 P2
+    --------------------               --------------------
+    1   Johnny (85)                    1   Johnny (181)
+    2   Betsy (49)                     2   X (186)
+    3   Nichole (85)                   3   Norman (148)
+    4   Sue (41)                       5   (X) (184)
+    5   Sam (96)                       6   Henrie (134)
+
+                            |
+                            |
+                            V
+
+                    Compacted
+                    --------------------
+                    1   Johnny (181)
+                    3   Norman (148)
+                    4   Sue (141)
+                    5   (X) (184)
+                    6   Henrie (134)
+
+
+
+- Compacting SSTables
+
+    SSTable #1                          SSTable #2
+    ------------------------            ------------------------
+    7  13  18  21  58                   3  7  18  36  58  84
+
+                                  |
+                                  |
+                                  V
+
+                        Compacted
+                        --------------------------------
+                        3  7  13  18  21  36  58  84
