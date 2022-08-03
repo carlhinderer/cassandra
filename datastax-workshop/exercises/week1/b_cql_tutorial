@@ -1,0 +1,105 @@
+-----------------------------------------------------------------------------
+| WEEK 1 - CQL TUTORIAL                                                     |
+-----------------------------------------------------------------------------
+
+- CQL Statments
+
+    - DDL Statements
+
+
+        CREATE | ALTER | DROP KEYSPACE
+        USE
+        CREATE | ALTER | DROP | TRUNCATE TABLE
+
+
+    - DML Statments
+
+        INSERT
+        SELECT
+        UPDATE
+        DELETE
+
+
+
+- Starting the CQL Shell
+
+    - Get help for cql shell:
+
+        $ cqlsh -h
+
+
+    - Start the shell:
+
+        $ cqlsh
+
+
+
+- Creating the Keyspace
+
+    - To create the keyspace:
+
+        CREATE KEYSPACE killr_video
+        WITH replication = {
+          'class': 'NetworkTopologyStrategy', 
+          'DC-Houston': 1 
+        };
+
+
+    - In a real installation, we should use at least 2 datacenters and at least 3 replicas per dc.
+
+
+    - To use the keyspace:
+
+        USE killr_video;
+
+
+
+- Creating the Table
+
+    - To create the 'users' table:
+
+        CREATE TABLE users (
+          email TEXT PRIMARY KEY,
+          name TEXT,
+          age INT,
+          date_joined DATE
+        );
+
+
+
+- CRUD
+
+    - To insert rows:
+
+        INSERT INTO users (email, name, age, date_joined) 
+        VALUES ('joe@datastax.com', 'Joe', 25, '2020-01-01');
+
+        INSERT INTO users (email, name, age, date_joined) 
+        VALUES ('jen@datastax.com', 'Jen', 24, '2022-08-01');
+
+
+    - To select rows:
+
+        SELECT * FROM users
+        WHERE email = 'joe@datastax.com';
+
+        SELECT * FROM users
+        WHERE email = 'jen@datastax.com';
+
+
+    - To update rows:
+
+        UPDATE users SET name = 'Joseph' 
+        WHERE email = 'joe@datastax.com';
+
+        UPDATE users SET name = 'Jennifer' 
+        WHERE email = 'jen@datastax.com';
+
+
+    - To delete rows:
+
+        DELETE FROM users 
+        WHERE email = 'joe@datastax.com';
+
+        DELETE FROM users 
+        WHERE email = 'jen@datastax.com';
